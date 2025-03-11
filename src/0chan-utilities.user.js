@@ -1,39 +1,19 @@
 // ==UserScript==
 // @name         0chan Utilities
-// @namespace    https://ochan.ru/userjs/
-// @version      3.5.0
+// @namespace    http://ochko.i2p/userjs
+// @version      3.5.1
 // @description  Various 0chan utilities
-// @updateURL    https://juribiyan.github.io/0chan-utilities/src/0chan-utilities.meta.js
-// @downloadURL  https://juribiyan.github.io/0chan-utilities/src/0chan-utilities.user.js
-// @author       Snivy & devarped
-// @include      https://www.0chan.pl/*
-// @include      https://p.0chan.pl/*
-// @include      https://0.1chan.pl/*
-// @include      https://ygg.0chan.pl/*
-// @include      https://www.0chan.club/*
-// @include      http://nullplctggmjazqcoboc2pw5anogckczzj6xo45ukrnsaxarpswu7sid.onion/*
-// @include      http://0pl.i2p/*
-// @include      http://gd7qe2pu2jwqabz4zcf3wwablrzym7p6qswczoapkm5oa5ouuaua.b32.i2p/*
-// @include      http://[225:55:9ebf:1709:7b1f:a315:1119:6eff]/*
-// @include      http://0chan.ygg/*
-// @include      https://ochan.ru/*
-// @include      https://foxhound.cc/*
-// @include      https://0chan.life/*
-// @include      https://p.0chan.life/*
-// @include      https://0chan.xyz/*
-// @include      https://nullchan.i2phides.me/*
-// @include      http://nullz2mkp7znirlcersxpk7qmkmgcc6u3yhe462p2qkpxsdb3mja.b32.i2p/*
-// @include      http://nullchan.i2p/*
-// @include      https://0chan.nl/*
-// @include      https://0chna.ru/*
-// @include      https://mint.0chan.ru/*
-// @include      https://0chans.ru/*
-// @include      https://0chan.me/*
+// @updateURL    https://github.com/katzterd/0chan-utilities/raw/master/src/0chan-utilities.meta.js
+// @downloadURL  https://github.com/katzterd/0chan-utilities/raw/master/src/0chan-utilities.user.js
+// @author       Snivy & devarped & Vladeek
+// @include      http://ochko.i2p/*
+// @include      http://ochkocuka75kjdsqxwopbvbwr677t4udud2jdydejxerhjhey6sbpkid.onion/*
+// @include      http://ochko.ygg/*
 // @grant        GM_getResourceText
-// @icon         https://juribiyan.github.io/0chan-utilities/icon.png
-// @resource     baseCSS https://juribiyan.github.io/0chan-utilities/css/base.css
-// @resource     darkCSS https://juribiyan.github.io/0chan-utilities/css/dark.css
-// @resource     catalogCSS https://juribiyan.github.io/0chan-utilities/css/catalog.css
+// @icon         https://github.com/katzterd/0chan-utilities/raw/master/icon.png
+// @resource     baseCSS https://github.com/katzterd/0chan-utilities/raw/master/css/base.css
+// @resource     darkCSS https://github.com/katzterd/0chan-utilities/raw/master/css/dark.css
+// @resource     catalogCSS https://github.com/katzterd/0chan-utilities/raw/master/css/catalog.css
 // ==/UserScript==
 
 const icons =
@@ -91,23 +71,9 @@ lastActiveTextarea
 , version = GM_info.script.version
 
 if (
-    ["www.0chan.pl",
-    "p.0chan.pl",
-    "0.1chan.pl",
-    "ygg.0chan.pl",
-    "www.0chan.club",
-    "0chan.life",
-    "www.0chan.life",
-    "0chan.xyz",
-    "nullplctggmjazqcoboc2pw5anogckczzj6xo45ukrnsaxarpswu7sid.onion",
-    "0pl.i2p",
-    "gd7qe2pu2jwqabz4zcf3wwablrzym7p6qswczoapkm5oa5ouuaua.b32.i2p",
-    "[225:55:9ebf:1709:7b1f:a315:1119:6eff]",
-    "0chan.ygg",
-    "foxhound.cc",
-    "0chna.ru",
-    "mint.0chan.ru",
-    "0chans.ru"
+    ["ochko.i2p",
+    "ochkocuka75kjdsqxwopbvbwr677t4udud2jdydejxerhjhey6sbpkid.onion",
+    "ochko.ygg"
    ].includes(location.host)) {
     var IS_OCHKO = true
 } else {
@@ -193,15 +159,15 @@ const share = {
         color: '#E42727'
       }
     },
-    '1chanpl': {
-      name: "1chan.pl",
-      link: "https://1chan.pl/live/addXS",
+    '1chancyou': {
+      name: "1chan.cyou",
+      link: "https://1chan.cyou/live/addXS",
       method: 'GET',
       options: (url, description) => `link=${url}&description=${description}`,
       icon: {
         type: 'svg',
         name: '1chan',
-        color: '#dc143c'
+        color: '#ff5a00'
       }
     },
     'overnullch': {
@@ -213,17 +179,6 @@ const share = {
         type: 'svg',
         name: 'hirudotron',
         color: '#2c333d'
-      }
-    },
-    'metator': {
-      name: "Метатор",
-      link: "http://metatorjq65tshfy.onion/live/api.php",
-      method: 'POST',
-      options: (url, description) => `url=${url}&description=${description}`,
-      icon: {
-        type: 'svg',
-        name: 'hirudotron',
-        color: '#292929'
       }
     },
     telegram: {
