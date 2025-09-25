@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         0chan Utilities
 // @namespace    https://ochan.ru/userjs/
-// @version      3.7.2
+// @version      3.8.0
 // @description  Various 0chan utilities
 // @updateURL    https://juribiyan.github.io/0chan-utilities/src/0chan-utilities.meta.js
 // @downloadURL  https://juribiyan.github.io/0chan-utilities/src/0chan-utilities.user.js
@@ -34,7 +34,7 @@
 // @include      https://dev.0chan.club/*
 // @grant        GM_getResourceText
 // @icon         https://juribiyan.github.io/0chan-utilities/icon.png
-// @resource     baseCSS https://juribiyan.github.io/0chan-utilities/css/base.css?v=3.7.2
+// @resource     baseCSS http://0chan-utilities/css/base.css?v=3.8.34
 // @resource     darkCSS https://juribiyan.github.io/0chan-utilities/css/dark.css?v=3.5.3
 // @resource     catalogCSS https://juribiyan.github.io/0chan-utilities/css/catalog.css?v=3.5.3
 // ==/UserScript==
@@ -1519,6 +1519,11 @@ var eventDispatcher = {
     if (resetbg) {
       setAsBackground.reset()
     }
+    // Grab links
+    let grl = e.path.find(el => el?.classList?.contains('ZU-grab-links'))
+    if (grl) {
+      linkGrabber.show()
+    }
     // Mention
     let mention = e.path.find(el => el?.classList?.contains('ZU-mention-btn'))
     if (mention) {
@@ -2451,6 +2456,7 @@ var settingsPanel = {
           <button style="margin: 10px 0 2px 0; width: 100%" class="btn btn-default btn-xs ZU-prepare-archive ZU-menu-fullsize-btn" title="Подготовить страницу к сохранению"><span>Архивировать</span></button>
           <label style="display: block" for="ZU-archive-with-pictures"><input id="ZU-archive-with-pictures" type="checkbox" checked> с полноразмерными картинками</label>
           <button style="margin: 10px 0 2px 0; width: 100%; ${settings.backgroundImage ? '' : 'display: none'}" class="btn btn-default btn-xs ZU-reset-background ZU-menu-fullsize-btn"><span>Сбросить фон</span></button>
+          <button style="margin: 10px 0 2px 0; width: 100%;" class="btn btn-default btn-xs ZU-grab-links ZU-menu-fullsize-btn ZU-thread-only"><span>Получить ссылки</span></button>
         </div>
         <div id="ZU-top-autohide" class="ZU-top-menu-page" hidden>
           <div class="btn-group">
@@ -2509,7 +2515,7 @@ var ZURouter = {
   currentRoute: 'initial',
   enter: {
     // account: autohide.awaitInstall.bind(autohide),
-    home: boardHider.enable.bind(boardHider)
+    home: boardHider.enable.bind(boardHider),
   },
   leave: {
     home: boardHider.disable.bind(boardHider),
@@ -2890,6 +2896,7 @@ function onFreshContent() {
 
   try {
     state.type = app.$router.currentRoute.name
+    document.body.className = `ZU-state-${state.type}`
   }
   catch(e) {
     console.warn('[0u] Unable to determine app state', e)
@@ -2899,7 +2906,7 @@ function onFreshContent() {
 
   content = document.querySelector('#content > div')
   if (state.type==='thread')
-    singleThread = document.querySelector('.post-op')?.parentNode.parentNode
+    singleThread = getThreadVue(true)
   if (! state.initialized) {
     init()
   }
@@ -3208,4 +3215,79 @@ function preparePageSave(withPictures=false) {
       display: none
     }
   `)
+}
+
+function getThreadVue(orDom) {
+  const dom = document.querySelector('.post-op')?.parentNode.parentNode
+  return orDom ? dom : dom.__vue__
+}
+
+var linkGrabber = {
+  uniq: arr => [...new Set(arr)],
+  getLinks: function() {
+    return this.uniq(Array.prototype.map.call(document.querySelectorAll('.post-body-message a:not([data-post])'), a => a.href))
+  },
+  getYoutube: function() {
+    const results = []
+    getThreadVue().posts.forEach(post => {
+      post.attachments.forEach(att => {
+        if (att?.embed?.service == 'youtube')
+          results.push(`https://youtube.com/watch?v=${att.embed.embedId}`)
+      })
+    })
+    return this.uniq(results)
+  },
+  show: function() {
+    if (!this.popup || !document.body.contains(this.popup)) {
+      content.insertAdjacentHTML('beforeEnd', `<div class="panel panel-default" id="ZU-links-panel">
+        <div class="panel-heading">
+          <div class="btn-group ZU-links-panel-switch ZU-radio-btn-group" data-toggle="buttons">
+            <label class="btn btn-xs btn-default active">
+              <input type="radio" name="ZU-link-pane" value="link" autocomplete="off" checked=""> Ссылки
+            </label>
+            <label class="btn btn-xs btn-default">
+              <input type="radio" name="ZU-link-pane" value="youtube" autocomplete="off"> Youtube
+            </label>
+          </div>
+          <div class="btn-group">
+            <button id="ZU-ligr-copy" title="Копировать" type="button" class="btn" style="background-color: transparent; box-shadow: unset;"><i class="fa fa-copy"></i></button>
+            <button id="ZU-ligr-close" title="Закрыть" type="button" class="btn" style="background-color: transparent; box-shadow: unset;"><i class="fa fa-close"></i></button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <textarea class="form-control" id="ZU-lp-link"></textarea>
+          <textarea class="form-control" id="ZU-lp-youtube" style="display: none"></textarea>
+        </div>
+      </div>`)
+      this.popup = document.querySelector('#ZU-links-panel')
+      Array.prototype.forEach.call(this.popup.querySelectorAll('input[name="ZU-link-pane"]'), input => {
+        input.addEventListener('change', function() {
+          console.log(this.value)
+          Array.prototype.forEach.call(document.querySelectorAll('#ZU-links-panel textarea'), area => {
+            area.style.display = (area.id == `ZU-lp-${this.value}`) ? 'block' : 'none'
+          })
+          
+        })
+      })
+      this.popup.querySelector('#ZU-ligr-copy').addEventListener('click', async () => {
+        try {
+          const area = Array.prototype.find.call(this.popup.querySelectorAll('textarea'), a => a.style.display !== 'none')
+          await navigator.clipboard.writeText(area.value);
+          nativeAlert('success', 'Текст скопирован');
+        } catch (err) {
+          console.error('error', 'Не удалось скопировать');
+        }
+      })
+      this.popup.querySelector('#ZU-ligr-close').addEventListener('click', () => this.popup.remove())
+    }
+    const links = this.getLinks()
+    const linkArea = this.popup.querySelector('#ZU-lp-link')
+    linkArea.setAttribute('rows', Math.max(links.length, 5))
+    linkArea.value = links.join('\n')
+    
+    const vids = this.getYoutube()
+    const vidArea = this.popup.querySelector('#ZU-lp-youtube')
+    vidArea.setAttribute('rows', Math.max(vids.length, 5))
+    vidArea.value = vids.join('\n')
+  }
 }

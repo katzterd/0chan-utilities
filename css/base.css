@@ -766,3 +766,29 @@ div:not(.ZU-thread-hidden) + .ZU-thread-hidden {
 .ZU-set-as-bg-dropdown {
   padding: 0!important;
 }
+.ZU-set-as-bg-dropdown:not(.ZU-dropdown-show) {
+  height: 0;
+  overflow: hidden;
+  border: none;
+}
+
+#ZU-links-panel {
+  position: fixed;
+  z-index: 3;
+  top: 64px;
+  width: 66vw;
+  left: 50%;
+  translate: -50% 0;
+}
+body:not(.ZU-state-thread) .ZU-thread-only {
+  display: none;
+}
+#ZU-links-panel textarea {
+  resize: vertical;
+  max-height: calc(100vw - 500px);
+}
+#ZU-links-panel .panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
