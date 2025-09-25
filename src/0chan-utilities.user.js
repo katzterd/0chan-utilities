@@ -1227,6 +1227,14 @@ class MediaViewer {
     , mi_w = me.clientWidth, mi_h = me.clientHeight
     , svg = me.querySelector('.placeholder-svg')
     , resizeFactor = Math.min(this.viewer.clientHeight/svg.naturalHeight, this.viewer.clientWidth/svg.naturalWidth)
+    const video = me.querySelector('video')
+    if (video) { // just SHUT THE FUCK UP
+      video.style.display = "none"
+      video.pause()
+      video.currentTime = 0
+      video.src = ''
+      video.load()
+    }
     this.isDragged = false
     if (resizeFactor < 1) {
       mi_w = svg.naturalWidth * resizeFactor
@@ -1272,9 +1280,14 @@ class MediaViewer {
   }
   // Media element within container
   createMediaElement(underImageSrc, imgw, imgh, imgurl, trans='') {
+    const ext = new URL(window.location.protocol + imgurl)?.pathname.match(/\.([^\.\/]+)$/)?.[1]
+    const isVideo = ['webm', 'mp4'].includes(ext)
     return `<div class="media-item" ${trans}>
       <div style="background-image: url(${underImageSrc}); max-width: ${imgw}px" class="mv-under"></div>
-      <img src="${imgurl}" class="mv-over" onload="this.parentElement.classList.add('loaded')">
+      ${isVideo
+        ? `<video controls src="${imgurl}" class="mv-over" onloadeddata="this.parentElement.classList.add('loaded')" autoplay="true">`
+        : `<img src="${imgurl}" class="mv-over" onload="this.parentElement.classList.add('loaded')">`
+      }
       <img class="placeholder-svg" src="data:image/svg+xml;charset=utf-8,%3Csvg xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg' width='${imgw}' height='${imgh}'%2F%3E">
     </div>`
   }
