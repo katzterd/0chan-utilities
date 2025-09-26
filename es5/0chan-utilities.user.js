@@ -25,7 +25,7 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
 // ==UserScript==
 // @name         0chan Utilities
 // @namespace    https://ochan.ru/userjs/
-// @version      3.7.2
+// @version      3.9.1
 // @description  Various 0chan utilities
 // @updateURL    https://juribiyan.github.io/0chan-utilities/src/0chan-utilities.meta.js
 // @downloadURL  https://juribiyan.github.io/0chan-utilities/src/0chan-utilities.user.js
@@ -58,7 +58,7 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
 // @include      https://dev.0chan.club/*
 // @grant        GM_getResourceText
 // @icon         https://juribiyan.github.io/0chan-utilities/icon.png
-// @resource     baseCSS https://juribiyan.github.io/0chan-utilities/css/base.css?v=3.7.2
+// @resource     baseCSS https://juribiyan.github.io/0chan-utilities/css/base.css?v=3.9.1
 // @resource     darkCSS https://juribiyan.github.io/0chan-utilities/css/dark.css?v=3.5.3
 // @resource     catalogCSS https://juribiyan.github.io/0chan-utilities/css/catalog.css?v=3.5.3
 // ==/UserScript==
@@ -858,6 +858,7 @@ var MediaViewer = /*#__PURE__*/function () {
       me.style.transform = null;
     });
     MediaViewer.toggleScalability(true);
+    this.handleVideo();
   }
   return _createClass(MediaViewer, [{
     key: "refreshList",
@@ -1060,6 +1061,7 @@ var MediaViewer = /*#__PURE__*/function () {
       this.currentThumb = thumb;
       this.updateCounter();
       this.refreshList();
+      this.handleVideo();
     }
   }, {
     key: "updateCounter",
@@ -1089,6 +1091,15 @@ var MediaViewer = /*#__PURE__*/function () {
         mi_h = me.clientHeight,
         svg = me.querySelector('.placeholder-svg'),
         resizeFactor = Math.min(this.viewer.clientHeight / svg.naturalHeight, this.viewer.clientWidth / svg.naturalWidth);
+      var video = me.querySelector('video');
+      if (video) {
+        // just SHUT THE FUCK UP
+        video.style.display = "none";
+        video.pause();
+        video.currentTime = 0;
+        video.src = '';
+        video.load();
+      }
       this.isDragged = false;
       if (resizeFactor < 1) {
         mi_w = svg.naturalWidth * resizeFactor;
@@ -1128,8 +1139,11 @@ var MediaViewer = /*#__PURE__*/function () {
   }, {
     key: "createMediaElement",
     value: function createMediaElement(underImageSrc, imgw, imgh, imgurl) {
+      var _URL;
       var trans = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : '';
-      return "<div class=\"media-item\" ".concat(trans, ">\n      <div style=\"background-image: url(").concat(underImageSrc, "); max-width: ").concat(imgw, "px\" class=\"mv-under\"></div>\n      <img src=\"").concat(imgurl, "\" class=\"mv-over\" onload=\"this.parentElement.classList.add('loaded')\">\n      <img class=\"placeholder-svg\" src=\"data:image/svg+xml;charset=utf-8,%3Csvg xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg' width='").concat(imgw, "' height='").concat(imgh, "'%2F%3E\">\n    </div>");
+      var ext = (_URL = new URL(window.location.protocol + imgurl)) === null || _URL === void 0 || (_URL = _URL.pathname.match(/\.([^\.\/]+)$/)) === null || _URL === void 0 ? void 0 : _URL[1];
+      var isVideo = ['webm', 'mp4'].includes(ext);
+      return "<div class=\"media-item\" ".concat(trans, ">\n      <div style=\"background-image: url(").concat(underImageSrc, "); max-width: ").concat(imgw, "px\" class=\"mv-under\"></div>\n      ").concat(isVideo ? "<video controls src=\"".concat(imgurl, "\" class=\"mv-over\" onloadeddata=\"this.parentElement.classList.add('loaded')\" autoplay=\"true\">") : "<img src=\"".concat(imgurl, "\" class=\"mv-over\" onload=\"this.parentElement.classList.add('loaded')\">"), "\n      <img class=\"placeholder-svg\" src=\"data:image/svg+xml;charset=utf-8,%3Csvg xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg' width='").concat(imgw, "' height='").concat(imgh, "'%2F%3E\">\n    </div>");
     }
     // Rotation
   }, {
@@ -1138,6 +1152,21 @@ var MediaViewer = /*#__PURE__*/function () {
       var cw = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 1;
       this.rotation += cw * 90;
       this.applyTransform();
+    }
+    // Managing video volume
+  }, {
+    key: "handleVideo",
+    value: function handleVideo() {
+      var vid = this.currentMediaItem.querySelector('video');
+      if (!vid) return;
+      var _settings$volume = _slicedToArray(settings.volume, 2);
+      vid.volume = _settings$volume[0];
+      vid.muted = _settings$volume[1];
+      vid.addEventListener('volumechange', function () {
+        settings.volume = [vid.volume, vid.muted];
+        settings.save();
+        console.log(settings);
+      });
     }
   }], [{
     key: "handleAttachment",
@@ -1233,7 +1262,8 @@ var settings = {
     darkMode: darkMode.enabledByDefault,
     fixUkrSpelling: true,
     legacyMediaViewer: false,
-    backgroundImage: false
+    backgroundImage: false,
+    volume: [1, false]
   },
   _: {},
   hooks: {
@@ -1258,6 +1288,7 @@ var settings = {
     this._.autohideAtt = this.autohideAtt;
     this._.nullColor = this.nullColor;
     this._.backgroundImage = this.backgroundImage;
+    this._.volume = this.volume;
     localStorage['ZU-settings'] = JSON.stringify(this._);
   },
   init: function init() {
@@ -1475,18 +1506,26 @@ var eventDispatcher = {
     if (resetbg) {
       setAsBackground.reset();
     }
+    // Grab links
+    var grl = e.path.find(function (el) {
+      var _el$classList12;
+      return el === null || el === void 0 || (_el$classList12 = el.classList) === null || _el$classList12 === void 0 ? void 0 : _el$classList12.contains('ZU-grab-links');
+    });
+    if (grl) {
+      linkGrabber.show();
+    }
     // Mention
     var mention = e.path.find(function (el) {
-      var _el$classList12;
-      return el === null || el === void 0 || (_el$classList12 = el.classList) === null || _el$classList12 === void 0 ? void 0 : _el$classList12.contains('ZU-mention-btn');
+      var _el$classList13;
+      return el === null || el === void 0 || (_el$classList13 = el.classList) === null || _el$classList13 === void 0 ? void 0 : _el$classList13.contains('ZU-mention-btn');
     });
     if (mention) {
       mentionPost(mention.findParent('.post'));
     }
     // Popup slosing
     if (e.path.find(function (el) {
-      var _el$classList13;
-      return el === null || el === void 0 || (_el$classList13 = el.classList) === null || _el$classList13 === void 0 ? void 0 : _el$classList13.contains('ZU-settings-btn');
+      var _el$classList14;
+      return el === null || el === void 0 || (_el$classList14 = el.classList) === null || _el$classList14 === void 0 ? void 0 : _el$classList14.contains('ZU-settings-btn');
     })) {
       var _document$querySelect;
       [].forEach.call(document.querySelectorAll('#ZU-settings > div'), function (el) {
@@ -1501,8 +1540,8 @@ var eventDispatcher = {
       (_document$querySelect2 = document.querySelector('#ZU-settings')) === null || _document$querySelect2 === void 0 || (_document$querySelect2 = _document$querySelect2.classList) === null || _document$querySelect2 === void 0 || _document$querySelect2.remove('ZU-dropdown-show');
     }
     if (!e.path.find(function (el) {
-      var _el$classList14;
-      return (el === null || el === void 0 ? void 0 : el.classList) && ((_el$classList14 = el.classList) === null || _el$classList14 === void 0 ? void 0 : _el$classList14.contains('ZU-share-btn'));
+      var _el$classList15;
+      return (el === null || el === void 0 ? void 0 : el.classList) && ((_el$classList15 = el.classList) === null || _el$classList15 === void 0 ? void 0 : _el$classList15.contains('ZU-share-btn'));
     })) {
       Array.prototype.forEach.call(document.querySelectorAll('.ZU-share-dropdown'), function (dd) {
         var _dd$classList;
@@ -1510,8 +1549,8 @@ var eventDispatcher = {
       });
     }
     if (!e.path.find(function (el) {
-      var _el$classList15;
-      return (el === null || el === void 0 ? void 0 : el.classList) && ((_el$classList15 = el.classList) === null || _el$classList15 === void 0 ? void 0 : _el$classList15.contains('ZU-set-as-bg'));
+      var _el$classList16;
+      return (el === null || el === void 0 ? void 0 : el.classList) && ((_el$classList16 = el.classList) === null || _el$classList16 === void 0 ? void 0 : _el$classList16.contains('ZU-set-as-bg'));
     })) {
       Array.prototype.forEach.call(document.querySelectorAll('.ZU-set-as-bg-dropdown'), function (dd) {
         var _dd$classList2;
@@ -1520,16 +1559,16 @@ var eventDispatcher = {
     }
     // Top in-menu navigation
     var eat = e.path.find(function (el) {
-      var _el$classList16;
-      return el === null || el === void 0 || (_el$classList16 = el.classList) === null || _el$classList16 === void 0 ? void 0 : _el$classList16.contains('ZU-enter-autohide-top');
+      var _el$classList17;
+      return el === null || el === void 0 || (_el$classList17 = el.classList) === null || _el$classList17 === void 0 ? void 0 : _el$classList17.contains('ZU-enter-autohide-top');
     });
     if (eat) {
       fancyResizeXfade(document.querySelector('#ZU-settings'), '#ZU-settings-main', '#ZU-top-autohide');
     }
     // Page archiving
     var zpa = e.path.find(function (el) {
-      var _el$classList17;
-      return el === null || el === void 0 || (_el$classList17 = el.classList) === null || _el$classList17 === void 0 ? void 0 : _el$classList17.contains('ZU-prepare-archive');
+      var _el$classList18;
+      return el === null || el === void 0 || (_el$classList18 = el.classList) === null || _el$classList18 === void 0 ? void 0 : _el$classList18.contains('ZU-prepare-archive');
     });
     if (zpa) {
       var _document$querySelect3;
@@ -1537,8 +1576,8 @@ var eventDispatcher = {
     }
     // Saving autohide menu
     var ret = e.path.find(function (el) {
-      var _el$classList18;
-      return el === null || el === void 0 || (_el$classList18 = el.classList) === null || _el$classList18 === void 0 ? void 0 : _el$classList18.contains('ZU-exit-autohide-top');
+      var _el$classList19;
+      return el === null || el === void 0 || (_el$classList19 = el.classList) === null || _el$classList19 === void 0 ? void 0 : _el$classList19.contains('ZU-exit-autohide-top');
     });
     if (ret) {
       fancyResizeXfade(document.querySelector('#ZU-settings'), '#ZU-top-autohide', '#ZU-settings-main');
@@ -1547,8 +1586,8 @@ var eventDispatcher = {
     }
     // Hide by attachment
     var hba = e.path.find(function (el) {
-      var _el$classList19;
-      return el === null || el === void 0 || (_el$classList19 = el.classList) === null || _el$classList19 === void 0 ? void 0 : _el$classList19.contains('ZU-hide-attachment');
+      var _el$classList20;
+      return el === null || el === void 0 || (_el$classList20 = el.classList) === null || _el$classList20 === void 0 ? void 0 : _el$classList20.contains('ZU-hide-attachment');
     });
     if (hba) {
       var figVue = hba.findParent('figure').__vue__;
@@ -1559,8 +1598,8 @@ var eventDispatcher = {
     }
     // Remove autohide entry
     var rae = e.path.find(function (el) {
-      var _el$classList20;
-      return el === null || el === void 0 || (_el$classList20 = el.classList) === null || _el$classList20 === void 0 ? void 0 : _el$classList20.contains('ZU-remove-autohide-entry');
+      var _el$classList21;
+      return el === null || el === void 0 || (_el$classList21 = el.classList) === null || _el$classList21 === void 0 ? void 0 : _el$classList21.contains('ZU-remove-autohide-entry');
     });
     if (rae) {
       var data = rae.findParent('.ZU-autohide-attachemnt-entry').dataset;
@@ -1568,12 +1607,12 @@ var eventDispatcher = {
     }
     // Radio button group behavior
     var rbg = e.path.find(function (el) {
-        var _el$classList21;
-        return el === null || el === void 0 || (_el$classList21 = el.classList) === null || _el$classList21 === void 0 ? void 0 : _el$classList21.contains('ZU-radio-btn-group');
+        var _el$classList22;
+        return el === null || el === void 0 || (_el$classList22 = el.classList) === null || _el$classList22 === void 0 ? void 0 : _el$classList22.contains('ZU-radio-btn-group');
       }),
       rbb = e.path.find(function (el) {
-        var _el$classList22;
-        return el === null || el === void 0 || (_el$classList22 = el.classList) === null || _el$classList22 === void 0 ? void 0 : _el$classList22.contains('btn');
+        var _el$classList23;
+        return el === null || el === void 0 || (_el$classList23 = el.classList) === null || _el$classList23 === void 0 ? void 0 : _el$classList23.contains('btn');
       });
     if (rbg && rbb) {
       var _rbb$classList;
@@ -1586,8 +1625,8 @@ var eventDispatcher = {
     }
     // Entering Null Restyling mode
     var nr = e.path.find(function (el) {
-      var _el$classList23;
-      return el === null || el === void 0 || (_el$classList23 = el.classList) === null || _el$classList23 === void 0 ? void 0 : _el$classList23.contains('ZU-restyle-null');
+      var _el$classList24;
+      return el === null || el === void 0 || (_el$classList24 = el.classList) === null || _el$classList24 === void 0 ? void 0 : _el$classList24.contains('ZU-restyle-null');
     });
     if (nr) {
       var _document$querySelect4;
@@ -1595,16 +1634,16 @@ var eventDispatcher = {
     }
     // Exiting Null Restyling mode
     var nrs = e.path.find(function (el) {
-      var _el$classList24;
-      return el === null || el === void 0 || (_el$classList24 = el.classList) === null || _el$classList24 === void 0 ? void 0 : _el$classList24.contains('ZU-nulltwk-save');
+      var _el$classList25;
+      return el === null || el === void 0 || (_el$classList25 = el.classList) === null || _el$classList25 === void 0 ? void 0 : _el$classList25.contains('ZU-nulltwk-save');
     });
     if (nrs) {
       NullRestyler.save();
     }
     // Resetting the Null
     var nrr = e.path.find(function (el) {
-      var _el$classList25;
-      return el === null || el === void 0 || (_el$classList25 = el.classList) === null || _el$classList25 === void 0 ? void 0 : _el$classList25.contains('ZU-nulltwk-revert');
+      var _el$classList26;
+      return el === null || el === void 0 || (_el$classList26 = el.classList) === null || _el$classList26 === void 0 ? void 0 : _el$classList26.contains('ZU-nulltwk-revert');
     });
     if (nrr) {
       var res = NullRestyler.setValues(settings.defaults.nullColor);
@@ -1615,23 +1654,23 @@ var eventDispatcher = {
     }
     // Hiding/unhiding selection in stegospoiler
     var shs = e.path.find(function (el) {
-      var _el$classList26;
-      return el === null || el === void 0 || (_el$classList26 = el.classList) === null || _el$classList26 === void 0 ? void 0 : _el$classList26.contains('ZU-hide-selection');
+      var _el$classList27;
+      return el === null || el === void 0 || (_el$classList27 = el.classList) === null || _el$classList27 === void 0 ? void 0 : _el$classList27.contains('ZU-hide-selection');
     });
     if (shs) {
       textSteganography.hideSelection(shs.findParent('.reply-form').querySelector('textarea'));
     }
     var srs = e.path.find(function (el) {
-      var _el$classList27;
-      return el === null || el === void 0 || (_el$classList27 = el.classList) === null || _el$classList27 === void 0 ? void 0 : _el$classList27.contains('ZU-remove-spoilers');
+      var _el$classList28;
+      return el === null || el === void 0 || (_el$classList28 = el.classList) === null || _el$classList28 === void 0 ? void 0 : _el$classList28.contains('ZU-remove-spoilers');
     });
     if (srs) {
       textSteganography.removeSpoilers(srs.findParent('.reply-form').querySelector('textarea'));
     }
     // Collapsed references uncollapsing
     var expRef = e.path.find(function (el) {
-      var _el$classList28;
-      return el === null || el === void 0 || (_el$classList28 = el.classList) === null || _el$classList28 === void 0 ? void 0 : _el$classList28.contains('ZU-expand-refs');
+      var _el$classList29;
+      return el === null || el === void 0 || (_el$classList29 = el.classList) === null || _el$classList29 === void 0 ? void 0 : _el$classList29.contains('ZU-expand-refs');
     });
     if (expRef) {
       referenceCollapsing.expand(expRef.findParent('.post'));
@@ -1641,8 +1680,8 @@ var eventDispatcher = {
   mousedown: function mousedown(e) {
     // Quote on reply
     var replyBtn = e.path.find(function (el) {
-      var _el$classList29, _el$classList30;
-      return (el === null || el === void 0 ? void 0 : el.classList) && (((_el$classList29 = el.classList) === null || _el$classList29 === void 0 ? void 0 : _el$classList29.contains('post-button-reply')) || ((_el$classList30 = el.classList) === null || _el$classList30 === void 0 ? void 0 : _el$classList30.contains('ZU-quote-on-click')));
+      var _el$classList30, _el$classList31;
+      return (el === null || el === void 0 ? void 0 : el.classList) && (((_el$classList30 = el.classList) === null || _el$classList30 === void 0 ? void 0 : _el$classList30.contains('post-button-reply')) || ((_el$classList31 = el.classList) === null || _el$classList31 === void 0 ? void 0 : _el$classList31.contains('ZU-quote-on-click')));
     });
     if (replyBtn) {
       var _replyBtn$classList;
@@ -1662,8 +1701,8 @@ var eventDispatcher = {
     // Noko
     if (!IS_OCHKO) {
       var noko = e.path.find(function (el) {
-        var _el$classList31;
-        return el === null || el === void 0 || (_el$classList31 = el.classList) === null || _el$classList31 === void 0 ? void 0 : _el$classList31.contains('ZU-noko');
+        var _el$classList32;
+        return el === null || el === void 0 || (_el$classList32 = el.classList) === null || _el$classList32 === void 0 ? void 0 : _el$classList32.contains('ZU-noko');
       });
       if (noko) {
         settings.noko = noko.checked;
@@ -1689,8 +1728,8 @@ var eventDispatcher = {
     }
     // Null Restyling inputs
     var nr = e.path.find(function (el) {
-      var _el$classList32;
-      return el === null || el === void 0 || (_el$classList32 = el.classList) === null || _el$classList32 === void 0 ? void 0 : _el$classList32.contains('ZU-range');
+      var _el$classList33;
+      return el === null || el === void 0 || (_el$classList33 = el.classList) === null || _el$classList33 === void 0 ? void 0 : _el$classList33.contains('ZU-range');
     });
     if (nr) {
       nr.parentElement.querySelector('output .ZU-output').innerText = nr.value;
@@ -2407,7 +2446,7 @@ var settingsPanel = {
     });
     document.querySelector('.headmenu').insertAdjacentHTML('beforeEnd', "\n      <div class=\"dropdown-menu ZU-settings-dropdown ZU-dropdown\" id=\"ZU-settings\">\n        <div id=\"ZU-settings-main\" class=\"ZU-top-menu-page\">\n          <ul class=\"ZU-settings-list\">\n            ".concat(controls.reduce(function (htm, control) {
       return htm + _this19.modules[control.type].build(control);
-    }, ''), "\n          </ul>\n          <button class=\"btn btn-default btn-xs ZU-enter-autohide-top ZU-menu-fullsize-btn\"><span>\u0410\u0432\u0442\u043E\u0441\u043A\u0440\u044B\u0442\u0438\u0435</span></button>\n          <button style=\"margin: 10px 0 2px 0; width: 100%\" class=\"btn btn-default btn-xs ZU-prepare-archive ZU-menu-fullsize-btn\" title=\"\u041F\u043E\u0434\u0433\u043E\u0442\u043E\u0432\u0438\u0442\u044C \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0443 \u043A \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u044E\"><span>\u0410\u0440\u0445\u0438\u0432\u0438\u0440\u043E\u0432\u0430\u0442\u044C</span></button>\n          <label style=\"display: block\" for=\"ZU-archive-with-pictures\"><input id=\"ZU-archive-with-pictures\" type=\"checkbox\" checked> \u0441 \u043F\u043E\u043B\u043D\u043E\u0440\u0430\u0437\u043C\u0435\u0440\u043D\u044B\u043C\u0438 \u043A\u0430\u0440\u0442\u0438\u043D\u043A\u0430\u043C\u0438</label>\n          <button style=\"margin: 10px 0 2px 0; width: 100%; ").concat(settings.backgroundImage ? '' : 'display: none', "\" class=\"btn btn-default btn-xs ZU-reset-background ZU-menu-fullsize-btn\"><span>\u0421\u0431\u0440\u043E\u0441\u0438\u0442\u044C \u0444\u043E\u043D</span></button>\n        </div>\n        <div id=\"ZU-top-autohide\" class=\"ZU-top-menu-page\" hidden>\n          <div class=\"btn-group\">\n            <button class=\"btn btn-default btn-xs ZU-exit-autohide-top\"><span><i class=\"fa fa-chevron-left\"></i> <i class=\"fa fa-save\"></i> \u041D\u0430\u0437\u0430\u0434</span></button>\n            <!-- button class=\"btn btn-default btn-xs\"><span><i class=\"fa fa-undo\"></i></span></button -->\n          </div>\n          <div class=\"btn-group ZU-autohide-type-switch ZU-radio-btn-group\" data-toggle=\"buttons\">\n            <label class=\"btn btn-xs btn-default active\">\n              <input type=\"radio\" name=\"ZU-autohide-type\" value=\"txt\" autocomplete=\"off\" checked> \u0422\u0435\u043A\u0441\u0442\n            </label>\n            <label class=\"btn btn-xs btn-default\">\n              <input type=\"radio\" name=\"ZU-autohide-type\" value=\"img\" autocomplete=\"off\"> \u041A\u0430\u0440\u0442\u0438\u043D\u043A\u0438\n            </label>\n          </div>\n          <br>\n          <textarea id=\"ZU-autohide-text\" cols=\"30\" rows=\"10\" class=\"form-control ZU-autohide-content\"></textarea>\n          <div id=\"ZU-autohide-images\" class=\"ZU-autohide-content\" hidden>\n            ").concat(autohideAtt.getListHTML(), "\n          </div>\n        </div>\n      </div>"));
+    }, ''), "\n          </ul>\n          <button class=\"btn btn-default btn-xs ZU-enter-autohide-top ZU-menu-fullsize-btn\"><span>\u0410\u0432\u0442\u043E\u0441\u043A\u0440\u044B\u0442\u0438\u0435</span></button>\n          <button style=\"margin: 10px 0 2px 0; width: 100%\" class=\"btn btn-default btn-xs ZU-prepare-archive ZU-menu-fullsize-btn\" title=\"\u041F\u043E\u0434\u0433\u043E\u0442\u043E\u0432\u0438\u0442\u044C \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0443 \u043A \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u044E\"><span>\u0410\u0440\u0445\u0438\u0432\u0438\u0440\u043E\u0432\u0430\u0442\u044C</span></button>\n          <label style=\"display: block\" for=\"ZU-archive-with-pictures\"><input id=\"ZU-archive-with-pictures\" type=\"checkbox\" checked> \u0441 \u043F\u043E\u043B\u043D\u043E\u0440\u0430\u0437\u043C\u0435\u0440\u043D\u044B\u043C\u0438 \u043A\u0430\u0440\u0442\u0438\u043D\u043A\u0430\u043C\u0438</label>\n          <button style=\"margin: 10px 0 2px 0; width: 100%; ").concat(settings.backgroundImage ? '' : 'display: none', "\" class=\"btn btn-default btn-xs ZU-reset-background ZU-menu-fullsize-btn\"><span>\u0421\u0431\u0440\u043E\u0441\u0438\u0442\u044C \u0444\u043E\u043D</span></button>\n          <button style=\"margin: 10px 0 2px 0; width: 100%;\" class=\"btn btn-default btn-xs ZU-grab-links ZU-menu-fullsize-btn ZU-thread-only\"><span>\u041F\u043E\u043B\u0443\u0447\u0438\u0442\u044C \u0441\u0441\u044B\u043B\u043A\u0438</span></button>\n        </div>\n        <div id=\"ZU-top-autohide\" class=\"ZU-top-menu-page\" hidden>\n          <div class=\"btn-group\">\n            <button class=\"btn btn-default btn-xs ZU-exit-autohide-top\"><span><i class=\"fa fa-chevron-left\"></i> <i class=\"fa fa-save\"></i> \u041D\u0430\u0437\u0430\u0434</span></button>\n            <!-- button class=\"btn btn-default btn-xs\"><span><i class=\"fa fa-undo\"></i></span></button -->\n          </div>\n          <div class=\"btn-group ZU-autohide-type-switch ZU-radio-btn-group\" data-toggle=\"buttons\">\n            <label class=\"btn btn-xs btn-default active\">\n              <input type=\"radio\" name=\"ZU-autohide-type\" value=\"txt\" autocomplete=\"off\" checked> \u0422\u0435\u043A\u0441\u0442\n            </label>\n            <label class=\"btn btn-xs btn-default\">\n              <input type=\"radio\" name=\"ZU-autohide-type\" value=\"img\" autocomplete=\"off\"> \u041A\u0430\u0440\u0442\u0438\u043D\u043A\u0438\n            </label>\n          </div>\n          <br>\n          <textarea id=\"ZU-autohide-text\" cols=\"30\" rows=\"10\" class=\"form-control ZU-autohide-content\"></textarea>\n          <div id=\"ZU-autohide-images\" class=\"ZU-autohide-content\" hidden>\n            ").concat(autohideAtt.getListHTML(), "\n          </div>\n        </div>\n      </div>"));
     var spellsVal = settings.autohide.map(function (spell) {
         return _typeof(spell) === 'object' ? "/".concat(spell.source, "/").concat(spell.flags) : spell;
       }).join('\n'),
@@ -2823,16 +2862,16 @@ function start() {
 }
 start();
 function onFreshContent() {
-  var _document$querySelect5;
   boardHider.reCheckNativeSupport();
   try {
     state.type = app.$router.currentRoute.name;
+    document.body.className = "ZU-state-".concat(state.type);
   } catch (e) {
     console.warn('[0u] Unable to determine app state', e);
   }
   groupHiddenThreads.init();
   content = document.querySelector('#content > div');
-  if (state.type === 'thread') singleThread = (_document$querySelect5 = document.querySelector('.post-op')) === null || _document$querySelect5 === void 0 ? void 0 : _document$querySelect5.parentNode.parentNode;
+  if (state.type === 'thread') singleThread = getThreadVue(true);
   if (!state.initialized) {
     init();
   } else {
@@ -3100,3 +3139,80 @@ function preparePageSave() {
   });
   injector.inject('zu-offline-pic-expanding', "\n    .ZU-offline-pic-switcher,\n    .ZU-offline-pic-switcher:not(:checked) + .ZU-offline-pic-thumb + .ZU-offline-pic-full,\n    .ZU-offline-pic-switcher:checked + .ZU-offline-pic-thumb {\n      display: none\n    }\n  ");
 }
+function getThreadVue(orDom) {
+  var _document$querySelect5;
+  var dom = (_document$querySelect5 = document.querySelector('.post-op')) === null || _document$querySelect5 === void 0 ? void 0 : _document$querySelect5.parentNode.parentNode;
+  return orDom ? dom : dom.__vue__;
+}
+var linkGrabber = {
+  uniq: function uniq(arr) {
+    return _toConsumableArray(new Set(arr));
+  },
+  getLinks: function getLinks() {
+    return this.uniq(Array.prototype.map.call(document.querySelectorAll('.post-body-message a:not([data-post])'), function (a) {
+      return a.href;
+    }));
+  },
+  getYoutube: function getYoutube() {
+    var results = [];
+    getThreadVue().posts.forEach(function (post) {
+      post.attachments.forEach(function (att) {
+        var _att$embed2;
+        if ((att === null || att === void 0 || (_att$embed2 = att.embed) === null || _att$embed2 === void 0 ? void 0 : _att$embed2.service) == 'youtube') results.push("https://youtube.com/watch?v=".concat(att.embed.embedId));
+      });
+    });
+    return this.uniq(results);
+  },
+  show: function show() {
+    var _this26 = this;
+    if (!this.popup || !document.body.contains(this.popup)) {
+      content.insertAdjacentHTML('beforeEnd', "<div class=\"panel panel-default\" id=\"ZU-links-panel\">\n        <div class=\"panel-heading\">\n          <div class=\"btn-group ZU-links-panel-switch ZU-radio-btn-group\" data-toggle=\"buttons\">\n            <label class=\"btn btn-xs btn-default active\">\n              <input type=\"radio\" name=\"ZU-link-pane\" value=\"link\" autocomplete=\"off\" checked=\"\"> \u0421\u0441\u044B\u043B\u043A\u0438\n            </label>\n            <label class=\"btn btn-xs btn-default\">\n              <input type=\"radio\" name=\"ZU-link-pane\" value=\"youtube\" autocomplete=\"off\"> Youtube\n            </label>\n          </div>\n          <div class=\"btn-group\">\n            <button id=\"ZU-ligr-copy\" title=\"\u041A\u043E\u043F\u0438\u0440\u043E\u0432\u0430\u0442\u044C\" type=\"button\" class=\"btn\" style=\"background-color: transparent; box-shadow: unset;\"><i class=\"fa fa-copy\"></i></button>\n            <button id=\"ZU-ligr-close\" title=\"\u0417\u0430\u043A\u0440\u044B\u0442\u044C\" type=\"button\" class=\"btn\" style=\"background-color: transparent; box-shadow: unset;\"><i class=\"fa fa-close\"></i></button>\n          </div>\n        </div>\n        <div class=\"panel-body\">\n          <textarea class=\"form-control\" id=\"ZU-lp-link\"></textarea>\n          <textarea class=\"form-control\" id=\"ZU-lp-youtube\" style=\"display: none\"></textarea>\n        </div>\n      </div>");
+      this.popup = document.querySelector('#ZU-links-panel');
+      Array.prototype.forEach.call(this.popup.querySelectorAll('input[name="ZU-link-pane"]'), function (input) {
+        input.addEventListener('change', function () {
+          var _this25 = this;
+          console.log(this.value);
+          Array.prototype.forEach.call(document.querySelectorAll('#ZU-links-panel textarea'), function (area) {
+            area.style.display = area.id == "ZU-lp-".concat(_this25.value) ? 'block' : 'none';
+          });
+        });
+      });
+      this.popup.querySelector('#ZU-ligr-copy').addEventListener('click', /*#__PURE__*/_asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
+        var area;
+        return _regeneratorRuntime().wrap(function _callee2$(_context2) {
+          while (1) switch (_context2.prev = _context2.next) {
+            case 0:
+              _context2.prev = 0;
+              area = Array.prototype.find.call(_this26.popup.querySelectorAll('textarea'), function (a) {
+                return a.style.display !== 'none';
+              });
+              _context2.next = 4;
+              return navigator.clipboard.writeText(area.value);
+            case 4:
+              nativeAlert('success', 'Текст скопирован');
+              _context2.next = 10;
+              break;
+            case 7:
+              _context2.prev = 7;
+              _context2.t0 = _context2["catch"](0);
+              console.error('error', 'Не удалось скопировать');
+            case 10:
+            case "end":
+              return _context2.stop();
+          }
+        }, _callee2, null, [[0, 7]]);
+      })));
+      this.popup.querySelector('#ZU-ligr-close').addEventListener('click', function () {
+        return _this26.popup.remove();
+      });
+    }
+    var links = this.getLinks();
+    var linkArea = this.popup.querySelector('#ZU-lp-link');
+    linkArea.setAttribute('rows', Math.max(links.length, 5));
+    linkArea.value = links.join('\n');
+    var vids = this.getYoutube();
+    var vidArea = this.popup.querySelector('#ZU-lp-youtube');
+    vidArea.setAttribute('rows', Math.max(vids.length, 5));
+    vidArea.value = vids.join('\n');
+  }
+};
