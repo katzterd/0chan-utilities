@@ -1035,6 +1035,7 @@ class MediaViewer {
       me.style.transform = null
     })
     MediaViewer.toggleScalability(true)
+    this.handleVideo()
   }
   refreshList() {
     this.list = [].filter.call(document.querySelectorAll('figure.post-img'), fig => !fig.__vue__.attachment.embed)
@@ -1209,6 +1210,7 @@ class MediaViewer {
     this.currentThumb = thumb
     this.updateCounter()
     this.refreshList()
+    this.handleVideo()
   }
   updateCounter() {
     let index = this.findIndex(this.currentThumb)
@@ -1296,6 +1298,17 @@ class MediaViewer {
     this.rotation += (cw * 90)
     this.applyTransform()
   }
+  // Managing video volume
+  handleVideo() {
+    const vid = this.currentMediaItem.querySelector('video')
+    if (!vid) return;
+    [vid.volume, vid.muted] = settings.volume
+    vid.addEventListener('volumechange', () => {
+      settings.volume = [vid.volume, vid.muted]
+      settings.save()
+      console.log(settings)
+    } )
+  }
 }
 
 var settings = {
@@ -1324,7 +1337,8 @@ var settings = {
     darkMode: darkMode.enabledByDefault,
     fixUkrSpelling: true,
     legacyMediaViewer: false,
-    backgroundImage: false
+    backgroundImage: false,
+    volume: [1, false]
   },
   _: {},
   hooks: {
@@ -1349,6 +1363,7 @@ var settings = {
     this._.autohideAtt = this.autohideAtt
     this._.nullColor = this.nullColor
     this._.backgroundImage = this.backgroundImage
+    this._.volume = this.volume
     localStorage['ZU-settings'] = JSON.stringify(this._)
   },
   init: function() {
