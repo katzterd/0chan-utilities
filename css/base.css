@@ -774,7 +774,7 @@ div:not(.ZU-thread-hidden) + .ZU-thread-hidden {
 
 #ZU-links-panel {
   position: fixed;
-  z-index: 3;
+  z-index: 5;
   top: 64px;
   width: 66vw;
   left: 50%;
