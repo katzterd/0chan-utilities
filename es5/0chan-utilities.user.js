@@ -25,7 +25,7 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
 // ==UserScript==
 // @name         0chan Utilities
 // @namespace    https://ochan.ru/userjs/
-// @version      3.9.1
+// @version      3.9.2
 // @description  Various 0chan utilities
 // @updateURL    https://juribiyan.github.io/0chan-utilities/src/0chan-utilities.meta.js
 // @downloadURL  https://juribiyan.github.io/0chan-utilities/src/0chan-utilities.user.js
@@ -58,7 +58,7 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
 // @include      https://dev.0chan.club/*
 // @grant        GM_getResourceText
 // @icon         https://juribiyan.github.io/0chan-utilities/icon.png
-// @resource     baseCSS https://juribiyan.github.io/0chan-utilities/css/base.css?v=3.9.1
+// @resource     baseCSS https://juribiyan.github.io/0chan-utilities/css/base.css?v=3.9.2
 // @resource     darkCSS https://juribiyan.github.io/0chan-utilities/css/dark.css?v=3.5.3
 // @resource     catalogCSS https://juribiyan.github.io/0chan-utilities/css/catalog.css?v=3.5.3
 // ==/UserScript==
@@ -1165,7 +1165,6 @@ var MediaViewer = /*#__PURE__*/function () {
       vid.addEventListener('volumechange', function () {
         settings.volume = [vid.volume, vid.muted];
         settings.save();
-        console.log(settings);
       });
     }
   }], [{
@@ -3165,8 +3164,14 @@ var linkGrabber = {
   },
   show: function show() {
     var _this26 = this;
+    var links = this.getLinks();
+    var vids = this.getYoutube();
+    if (!links.length && !vids.length) {
+      nativeAlert('info', 'Ссылок не обнаружено');
+      return;
+    }
     if (!this.popup || !document.body.contains(this.popup)) {
-      content.insertAdjacentHTML('beforeEnd', "<div class=\"panel panel-default\" id=\"ZU-links-panel\">\n        <div class=\"panel-heading\">\n          <div class=\"btn-group ZU-links-panel-switch ZU-radio-btn-group\" data-toggle=\"buttons\">\n            <label class=\"btn btn-xs btn-default active\">\n              <input type=\"radio\" name=\"ZU-link-pane\" value=\"link\" autocomplete=\"off\" checked=\"\"> \u0421\u0441\u044B\u043B\u043A\u0438\n            </label>\n            <label class=\"btn btn-xs btn-default\">\n              <input type=\"radio\" name=\"ZU-link-pane\" value=\"youtube\" autocomplete=\"off\"> Youtube\n            </label>\n          </div>\n          <div class=\"btn-group\">\n            <button id=\"ZU-ligr-copy\" title=\"\u041A\u043E\u043F\u0438\u0440\u043E\u0432\u0430\u0442\u044C\" type=\"button\" class=\"btn\" style=\"background-color: transparent; box-shadow: unset;\"><i class=\"fa fa-copy\"></i></button>\n            <button id=\"ZU-ligr-close\" title=\"\u0417\u0430\u043A\u0440\u044B\u0442\u044C\" type=\"button\" class=\"btn\" style=\"background-color: transparent; box-shadow: unset;\"><i class=\"fa fa-close\"></i></button>\n          </div>\n        </div>\n        <div class=\"panel-body\">\n          <textarea class=\"form-control\" id=\"ZU-lp-link\"></textarea>\n          <textarea class=\"form-control\" id=\"ZU-lp-youtube\" style=\"display: none\"></textarea>\n        </div>\n      </div>");
+      content.insertAdjacentHTML('beforeEnd', "<div class=\"panel panel-default\" id=\"ZU-links-panel\">\n        <div class=\"panel-heading\">\n          <div class=\"btn-group ZU-links-panel-switch ZU-radio-btn-group\" data-toggle=\"buttons\">\n            <label class=\"btn btn-xs btn-default ".concat(links.length ? "active" : '', "\">\n              <input type=\"radio\" name=\"ZU-link-pane\" value=\"link\" autocomplete=\"off\" ").concat(links.length ? "checked=\"\"" : '', "> \u0421\u0441\u044B\u043B\u043A\u0438\n            </label>\n            <label class=\"btn btn-xs btn-default ").concat(!links.length ? "active" : '', "\">\n              <input type=\"radio\" name=\"ZU-link-pane\" value=\"youtube\" autocomplete=\"off\" ").concat(!links.length ? "checked=\"\"" : '', "> Youtube\n            </label>\n          </div>\n          <div class=\"btn-group\">\n            <button id=\"ZU-ligr-copy\" title=\"\u041A\u043E\u043F\u0438\u0440\u043E\u0432\u0430\u0442\u044C\" type=\"button\" class=\"btn\" style=\"background-color: transparent; box-shadow: unset;\"><i class=\"fa fa-copy\"></i></button>\n            <button id=\"ZU-ligr-close\" title=\"\u0417\u0430\u043A\u0440\u044B\u0442\u044C\" type=\"button\" class=\"btn\" style=\"background-color: transparent; box-shadow: unset;\"><i class=\"fa fa-close\"></i></button>\n          </div>\n        </div>\n        <div class=\"panel-body\">\n          <textarea class=\"form-control\" id=\"ZU-lp-link\" ").concat(!links.length ? "style=\"display: none\"" : '', "></textarea>\n          <textarea class=\"form-control\" id=\"ZU-lp-youtube\" ").concat(links.length ? "style=\"display: none\"" : '', "></textarea>\n        </div>\n      </div>"));
       this.popup = document.querySelector('#ZU-links-panel');
       Array.prototype.forEach.call(this.popup.querySelectorAll('input[name="ZU-link-pane"]'), function (input) {
         input.addEventListener('change', function () {
@@ -3206,11 +3211,9 @@ var linkGrabber = {
         return _this26.popup.remove();
       });
     }
-    var links = this.getLinks();
     var linkArea = this.popup.querySelector('#ZU-lp-link');
     linkArea.setAttribute('rows', Math.max(links.length, 5));
     linkArea.value = links.join('\n');
-    var vids = this.getYoutube();
     var vidArea = this.popup.querySelector('#ZU-lp-youtube');
     vidArea.setAttribute('rows', Math.max(vids.length, 5));
     vidArea.value = vids.join('\n');

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         0chan Utilities
 // @namespace    https://ochan.ru/userjs/
-// @version      3.9.1
+// @version      3.9.2
 // @description  Various 0chan utilities
 // @updateURL    https://juribiyan.github.io/0chan-utilities/src/0chan-utilities.meta.js
 // @downloadURL  https://juribiyan.github.io/0chan-utilities/src/0chan-utilities.user.js
@@ -34,7 +34,7 @@
 // @include      https://dev.0chan.club/*
 // @grant        GM_getResourceText
 // @icon         https://juribiyan.github.io/0chan-utilities/icon.png
-// @resource     baseCSS https://juribiyan.github.io/0chan-utilities/css/base.css?v=3.9.1
+// @resource     baseCSS https://juribiyan.github.io/0chan-utilities/css/base.css?v=3.9.2
 // @resource     darkCSS https://juribiyan.github.io/0chan-utilities/css/dark.css?v=3.5.3
 // @resource     catalogCSS https://juribiyan.github.io/0chan-utilities/css/catalog.css?v=3.5.3
 // ==/UserScript==
@@ -1306,7 +1306,6 @@ class MediaViewer {
     vid.addEventListener('volumechange', () => {
       settings.volume = [vid.volume, vid.muted]
       settings.save()
-      console.log(settings)
     } )
   }
 }
@@ -3266,15 +3265,22 @@ var linkGrabber = {
     return this.uniq(results)
   },
   show: function() {
+    const links = this.getLinks()
+    const vids = this.getYoutube()
+    if (!links.length && !vids.length) {
+      nativeAlert('info', 'Ссылок не обнаружено')
+      return
+    }
+
     if (!this.popup || !document.body.contains(this.popup)) {
       content.insertAdjacentHTML('beforeEnd', `<div class="panel panel-default" id="ZU-links-panel">
         <div class="panel-heading">
           <div class="btn-group ZU-links-panel-switch ZU-radio-btn-group" data-toggle="buttons">
-            <label class="btn btn-xs btn-default active">
-              <input type="radio" name="ZU-link-pane" value="link" autocomplete="off" checked=""> Ссылки
+            <label class="btn btn-xs btn-default ${links.length ? `active` : ''}">
+              <input type="radio" name="ZU-link-pane" value="link" autocomplete="off" ${links.length ? `checked=""` : ''}> Ссылки
             </label>
-            <label class="btn btn-xs btn-default">
-              <input type="radio" name="ZU-link-pane" value="youtube" autocomplete="off"> Youtube
+            <label class="btn btn-xs btn-default ${!links.length ? `active` : ''}">
+              <input type="radio" name="ZU-link-pane" value="youtube" autocomplete="off" ${!links.length ? `checked=""` : ''}> Youtube
             </label>
           </div>
           <div class="btn-group">
@@ -3283,8 +3289,8 @@ var linkGrabber = {
           </div>
         </div>
         <div class="panel-body">
-          <textarea class="form-control" id="ZU-lp-link"></textarea>
-          <textarea class="form-control" id="ZU-lp-youtube" style="display: none"></textarea>
+          <textarea class="form-control" id="ZU-lp-link" ${!links.length ? `style="display: none"` : ''}></textarea>
+          <textarea class="form-control" id="ZU-lp-youtube" ${links.length ? `style="display: none"` : ''}></textarea>
         </div>
       </div>`)
       this.popup = document.querySelector('#ZU-links-panel')
@@ -3308,12 +3314,12 @@ var linkGrabber = {
       })
       this.popup.querySelector('#ZU-ligr-close').addEventListener('click', () => this.popup.remove())
     }
-    const links = this.getLinks()
+    
     const linkArea = this.popup.querySelector('#ZU-lp-link')
     linkArea.setAttribute('rows', Math.max(links.length, 5))
     linkArea.value = links.join('\n')
     
-    const vids = this.getYoutube()
+    
     const vidArea = this.popup.querySelector('#ZU-lp-youtube')
     vidArea.setAttribute('rows', Math.max(vids.length, 5))
     vidArea.value = vids.join('\n')
