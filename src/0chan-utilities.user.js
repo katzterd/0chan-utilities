@@ -3,8 +3,8 @@
 // @namespace    https://ochan.ru/userjs/
 // @version      3.9.2
 // @description  Various 0chan utilities
-// @updateURL    https://juribiyan.github.io/0chan-utilities/src/0chan-utilities.meta.js
-// @downloadURL  https://juribiyan.github.io/0chan-utilities/src/0chan-utilities.user.js
+// @updateURL    https://katzterd.github.io/0chan-utilities/src/0chan-utilities.meta.js
+// @downloadURL  https://katzterd.github.io/0chan-utilities/src/0chan-utilities.user.js
 // @author       Snivy & devarped
 // @include      https://www.0chan.pl/*
 // @include      https://p.0chan.pl/*
@@ -33,10 +33,10 @@
 // @include      https://0chan.club/*
 // @include      https://dev.0chan.club/*
 // @grant        GM_getResourceText
-// @icon         https://juribiyan.github.io/0chan-utilities/icon.png
-// @resource     baseCSS https://juribiyan.github.io/0chan-utilities/css/base.css?v=3.9.2
-// @resource     darkCSS https://juribiyan.github.io/0chan-utilities/css/dark.css?v=3.5.3
-// @resource     catalogCSS https://juribiyan.github.io/0chan-utilities/css/catalog.css?v=3.5.3
+// @icon         https://katzterd.github.io/0chan-utilities/icon.png
+// @resource     baseCSS https://katzterd.github.io/0chan-utilities/css/base.css?v=3.9.2
+// @resource     darkCSS https://katzterd.github.io/0chan-utilities/css/dark.css?v=3.5.3
+// @resource     catalogCSS https://katzterd.github.io/0chan-utilities/css/catalog.css?v=3.5.3
 // ==/UserScript==
 
 const icons =
@@ -3213,7 +3213,7 @@ function preparePageSave(withPictures=false) {
   })
   document.querySelector('#content div').insertAdjacentHTML('beforeEnd', `<small><i>
     Сохранено при помощи 
-    <a href="https://juribiyan.github.io/0chan-utilities/">0chan Utilities</a>
+    <a href="https://katzterd.github.io/0chan-utilities/">0chan Utilities</a>
     @ ${day}.${month}.${year}<br>
     Оригинал страницы:
     <a href="${document.location.href}">${document.location.href}</a>
